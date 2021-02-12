@@ -5,13 +5,15 @@
 
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 
 
 //CLIENTE TCP
 int main(int argc, char const *argv[]){
-    int sock, len;
+    int sock;
     int port = atoi(argv[2]);  
     char *servIP = argv[1];
+    char recv[1024];
 
     struct sockaddr_in server;
 
@@ -35,9 +37,8 @@ int main(int argc, char const *argv[]){
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(servIP);
     server.sin_port = htons(port);
-    len = sizeof(server);
 
-    if (connect(sock, (struct sockaddr *)&server, len) < 0) {
+    if (connect(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
         printf("ERR: No se pudo conectar\n");
         exit(-1);
     }
@@ -47,6 +48,17 @@ int main(int argc, char const *argv[]){
         exit(-1);
     }
 
+    memset(recv, 0, sizeof(recv));
+
+    if (read(sock, recv, sizeof(recv)) < 0) {
+        printf("ERR: No se pudo leer\n");
+        exit(-1);
+    }
+
+    printf("Recived: %s\n", recv);
+
+
+    printf("Fin de conexión");
     close(sock);
 
     return 0;
