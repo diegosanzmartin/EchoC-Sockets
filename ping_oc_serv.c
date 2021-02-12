@@ -4,5 +4,5 @@
 #include <locale.h>
 
 int main() {
-    printf("Hellow world")
+    printf("Hellow world");
 }
