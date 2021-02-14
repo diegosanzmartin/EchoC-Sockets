@@ -9,13 +9,19 @@
 
 
 //CLIENTE TCP
-int main(int argc, char const *argv[]){
+int main(int argc, char const *argv[]){    
+    //Variables sockets
     int sock;
     int port = atoi(argv[2]);  
     char *servIP = argv[1];
     char recv[1024];
 
     struct sockaddr_in server;
+
+    //Variables time
+    struct timeval ini;
+    struct timeval fin;
+    float time;
 
     if(argc != 3){
         printf("ERR: nº de argumentos no válido\n");
@@ -26,7 +32,7 @@ int main(int argc, char const *argv[]){
         printf("ERR: El nº de puerto debe ser mayor que 1023\n");
         exit(-1);
     }
-      
+
     sock = socket(AF_INET, SOCK_STREAM, 0);
 
     if(sock < 0) {
@@ -42,11 +48,16 @@ int main(int argc, char const *argv[]){
         printf("ERR: No se pudo conectar\n");
         exit(-1);
     }
+    gettimeofday(&ini, 0);   //Iniciamos el "cronómetro"
 
-    if (write(sock, "Prueba de conexión\n", strlen("Prueba de conexión\n")) < 0) {
+    printf("0\n");
+
+    if (write(sock, "Prueba de conexión", strlen("Prueba de conexión")) < 0) {
         printf("ERR: No se pudo escribir\n");
         exit(-1);
     }
+
+    printf("1\n");
 
     memset(recv, 0, sizeof(recv));
 
@@ -55,11 +66,15 @@ int main(int argc, char const *argv[]){
         exit(-1);
     }
 
-    printf("Recived: %s\n", recv);
+    printf("2\n");
 
+    gettimeofday(&fin, 0); //Apagamos el "cronómetro"
+    time = (fin.tv_sec - ini.tv_sec) * 1000.0f + (fin.tv_usec - ini.tv_usec) / 1000.0f;
 
-    printf("Fin de conexión");
+    printf("Recived from %s: bytes= time=%f\n", servIP, time);
     close(sock);
+
+    printf("Fin de conexión\n");
 
     return 0;
 }
