@@ -7,6 +7,7 @@
 #include <stdbool.h>        //Variables booleanas
 
 #include <unistd.h>         
+#include <netdb.h>
 #include <arpa/inet.h>      //Funciones orientadas a conexión
 #include <sys/time.h>       //Cronometrar tiempos
 
@@ -16,6 +17,7 @@ void intHandler(int x) {
     keepRunning = false;
 }
 //-----------------------------------------------------
+
 void timeEstad(float *t, float *tmin, float *tmax) {
     if(*tmax == 0 && *tmin == 0) {
         *tmax = *tmin = *t;
@@ -28,12 +30,36 @@ void timeEstad(float *t, float *tmin, float *tmax) {
     }
 }
 
+void hostNameToIP(char* hostName, char* IP) {
+ 	struct hostent *h;
+	struct in_addr **add;
+	int i;
+		
+    h = gethostbyname(hostName);
+	add = (struct in_addr **) h->h_addr_list;
+	
+	for(i = 0; add[i] != NULL; i++) 
+	{
+		strcpy(IP , inet_ntoa(*add[i]) );
+	}
+}
+
 //CLIENTE TCP
 int main(int argc, char const *argv[]){    
+
+    if(argc != 3){
+        printf("\nERR: nº de argumentos no válido\n");
+        exit(-1);
+    }
+
     //Variables sockets
     int cliSock;
     int servPort = atoi(argv[2]);  
-    char *servIP = argv[1];
+    char *host = argv[1];
+    char servIP[50];
+
+    hostNameToIP(host, servIP);
+
     char dataRecv[1024];
 
     char * echo = "abcd";
@@ -50,10 +76,10 @@ int main(int argc, char const *argv[]){
     float tmed = 0.0;
     int numEnv = 0;
 
-    if(argc != 3){
-        printf("\nERR: nº de argumentos no válido\n");
-        exit(-1);
-    }
+    //CTRL-C STOP
+    struct sigaction signCTRL;
+    signCTRL.sa_handler = intHandler;
+    sigaction(SIGINT, &signCTRL, NULL);
 
     if(servPort < 1023){
         printf("\nERR: El nº de puerto debe ser mayor que 1023\n");
@@ -118,7 +144,7 @@ int main(int argc, char const *argv[]){
         sleep(1);
     }
 
-    printf("\n------Estadísticas------\n %i paquetes transmitidos\n tmax= %f tmin= %f tmed= %f\n", numEnv, tmax, tmin, ((tmax+tmin)/2));
+    printf("\n------Estadísticas------\n %i paquetes transmitidos\n tmax= %.3f tmin= %.3f tmed= %.3f\n", numEnv, tmax, tmin, ((tmax+tmin)/2));
 
     return 0;
 }
