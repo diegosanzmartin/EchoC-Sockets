@@ -45,7 +45,6 @@ int main(int argc, char const *argv[]){
     float time;
     float tmax = 0.0;
     float tmin = 0.0;
-    float tmed = 0.0;
     int numEnv = 0;
 
     //CTRL-C STOP
@@ -88,14 +87,16 @@ int main(int argc, char const *argv[]){
         len = sizeof(cliAdrr);
         cliSock = accept(servSock, (struct sockaddr *)&cliAdrr, &len);
         
-        if (cliSock < 0) {
+        if (cliSock < 0 && numEnv == 0) {
             printf("\nERR: No se pudo aceptar\n");
             exit(-1);
+        }else if(cliSock < 0) {
+            break;
         }
         gettimeofday(&ini, 0);   //Iniciamos el "cronómetro"
         
         if(inet_ntop(AF_INET, &cliAdrr.sin_addr.s_addr, cliName, sizeof(cliName)) != NULL) {
-            printf("-Cliente: %s:%d   ", cliName, ntohs(cliAdrr.sin_port));
+            printf("-Cliente: %s/%d   ", cliName, ntohs(cliAdrr.sin_port));
         }
         else{
             printf("\nERR: No se pudo obtener la direccion del cliente\n");
@@ -137,10 +138,9 @@ int main(int argc, char const *argv[]){
 
         printf("time= %.3f\n", time);
         numEnv++;
-        sleep(1);
     }
 
-    printf("\n------Estadísticas------\n %i paquetes transmitidos\n tmax= %f tmin= %f tmed= %f\n", numEnv, tmax, tmin, ((tmax+tmin)/2));
+    printf("\n------Estadísticas------\n %i paquetes transmitidos\n tmax= %.3f tmin= %.3f tmed= %.3f\n", numEnv, tmax, tmin, ((tmax+tmin)/2));
 
     close(servSock);
 
