@@ -96,7 +96,6 @@ int main(int argc, char const *argv[]){
         
         if(inet_ntop(AF_INET, &cliAdrr.sin_addr.s_addr, cliName, sizeof(cliName)) != NULL) {
             printf("-Cliente: %s:%d   ", cliName, ntohs(cliAdrr.sin_port));
-            exit(-1);
         }
         else{
             printf("\nERR: No se pudo obtener la direccion del cliente\n");

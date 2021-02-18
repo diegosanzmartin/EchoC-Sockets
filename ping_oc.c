@@ -16,12 +16,23 @@ void intHandler(int x) {
     keepRunning = false;
 }
 //-----------------------------------------------------
+void timeEstad(float *t, float *tmin, float *tmax) {
+    if(*tmax == 0 && *tmin == 0) {
+        *tmax = *tmin = *t;
+    }
+    else if(*t > *tmax) {
+        *tmax = *t;
+    }
+    else if(*t < *tmin) {
+        *tmin = *t;
+    }
+}
 
 //CLIENTE TCP
 int main(int argc, char const *argv[]){    
     //Variables sockets
     int cliSock;
-    int port = atoi(argv[2]);  
+    int servPort = atoi(argv[2]);  
     char *servIP = argv[1];
     char dataRecv[1024];
 
@@ -34,29 +45,33 @@ int main(int argc, char const *argv[]){
     struct timeval ini;
     struct timeval fin;
     float time;
+    float tmax = 0.0;
+    float tmin = 0.0;
+    float tmed = 0.0;
+    int numEnv = 0;
 
     if(argc != 3){
         printf("\nERR: nº de argumentos no válido\n");
         exit(-1);
     }
 
-    if(port < 1023){
+    if(servPort < 1023){
         printf("\nERR: El nº de puerto debe ser mayor que 1023\n");
         exit(-1);
     }
 
 
-    for(;;) {
+    while (keepRunning) {
         cliSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if(cliSock < 0) {
             printf("\nERR: No se pudo crear el socket\n");
             exit(-1);
         }
 
-        memset(&servAddr, 0, sizeof(servAddr));
-        servAddr.sin_family = AF_INET;
+        memset(&server, 0, sizeof(server));
+        server.sin_family = AF_INET;
 
-        int ctrlVal = inet_pton(AF_INET, servIP, &servAddr.sin_addr.s_addr);
+        int ctrlVal = inet_pton(AF_INET, servIP, &server.sin_addr.s_addr);
         if(ctrlVal == 0) {
             printf("\nERR: Direccion no válida\n");
             exit(-1);
@@ -64,14 +79,16 @@ int main(int argc, char const *argv[]){
             printf("\nERR: Se produjo un error en la función inet_pton()\n");
             exit(-1);            
         }
-        servAddr.sin_port = htons(servPort);
+        server.sin_port = htons(servPort);
 
-        if(connect(cliSock, (struct sockaddr * ) & servAddr, sizeof(servAddr)) < 0) {
+        if(connect(cliSock, (struct sockaddr * ) & server, sizeof(server)) < 0) {
             printf("\nERR: No se pudo conectar\n");
             exit(-1);
         }
 
-        ssize_t bytesSent = send(Sock, echo, echoLen, 0);
+        gettimeofday(&ini, 0);   //Iniciamos el "cronómetro"
+
+        ssize_t bytesSent = send(cliSock, echo, echoLen, 0);
         if(bytesSent < 0) {
             printf("\nERR: No se pudo enviar\n");
             exit(-1);
@@ -83,23 +100,25 @@ int main(int argc, char const *argv[]){
         unsigned int totalBytesRecv = 0;
         while (totalBytesRecv < echoLen) {
             ssize_t bytesRecv = recv(cliSock, dataRecv, 1023, 0);
+            gettimeofday(&fin, 0); //Apagamos el "cronómetro"
+
             if (bytesRecv < 0) {
                 printf("\nERR: No se pudo recivir datos del servidor\n");
-                exit(-1);
-            }else if(bytesRecv == 0) {
-                printf("\nERR: La conexión se cerró bruscamente\n");
                 exit(-1);
             }
 
             totalBytesRecv += bytesRecv;
-            dataRecv[bytesRecv] = "\0";
-            printf("Recivido: %s\n", dataRecv);
+            time = (fin.tv_sec - ini.tv_sec) * 1000.0f + (fin.tv_usec - ini.tv_usec) / 1000.0f;
+            timeEstad(&time, &tmin, &tmax);
+
+            printf("-Servidor: %s/%d   bytes= %d   time= %.3f\n", servIP, servPort, bytesRecv, time);
+            numEnv++;
         }
         close(cliSock);
-
+        sleep(1);
     }
 
-    printf("Fin de conexión\n");
+    printf("\n------Estadísticas------\n %i paquetes transmitidos\n tmax= %f tmin= %f tmed= %f\n", numEnv, tmax, tmin, ((tmax+tmin)/2));
 
     return 0;
 }
