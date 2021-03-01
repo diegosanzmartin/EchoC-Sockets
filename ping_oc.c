@@ -129,7 +129,7 @@ int main(int argc, char const *argv[]){
             gettimeofday(&fin, 0); //Apagamos el "cronómetro"
 
             if (bytesRecv < 0) {
-                printf("\nERR: No se pudo recivir datos del servidor\n");
+                printf("\nERR: No se pudo recibir datos del servidor\n");
                 exit(-1);
             }
 

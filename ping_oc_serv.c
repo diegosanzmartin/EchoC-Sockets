@@ -106,7 +106,7 @@ int main(int argc, char const *argv[]){
         bytesRecv = recv(cliSock, dataRecv, 1024, 0);
 
         if(bytesRecv < 0) {
-            printf("\nERR: No se pudo recivir datos del cliente\n");
+            printf("\nERR: No se pudo recibir datos del cliente\n");
             exit(-1);
         }
         else{
@@ -126,7 +126,7 @@ int main(int argc, char const *argv[]){
 
             bytesRecv = recv(cliSock, dataRecv, 1024, 0);
             if (bytesRecv < 0) {
-                printf("\nERR: No se pudo recivir datos del cliente\n");
+                printf("\nERR: No se pudo recibir datos del cliente\n");
                 exit(-1);
             }
 
