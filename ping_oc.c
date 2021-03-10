@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>         //Func con cad de caracteres
+#include <string.h>         //Funciones con cad de caracteres
 #include <locale.h>         //Formato español
-
 #include <signal.h>         //CRTL-C
 #include <stdbool.h>        //Variables booleanas
-
 #include <unistd.h>         
 #include <netdb.h>
 #include <arpa/inet.h>      //Funciones orientadas a conexión
@@ -18,8 +16,8 @@ void intHandler(int x) {
 }
 //-----------------------------------------------------
 
-void timeEstad(float *t, float *tmin, float *tmax) {
-    if(*tmax == 0 && *tmin == 0) {
+void timeEstad(float *t, float *tmin, float *tmax) {		//Esta función compara los tiempos para 
+    if(*tmax == 0 && *tmin == 0) {				            //determinar cual es el tmin y el tmax
         *tmax = *tmin = *t;
     }
     else if(*t > *tmax) {
@@ -30,8 +28,9 @@ void timeEstad(float *t, float *tmin, float *tmax) {
     }
 }
 
-void hostNameToIP(char* hostName, char* IP) {
- 	struct hostent *h;
+void hostNameToIP(char* hostName, char* IP) {			//Esta función obtiene del DNS la
+                                                        //dirección IPV4 del host
+    struct hostent *h;
 	struct in_addr **add;
 	int i;
 		
@@ -44,13 +43,7 @@ void hostNameToIP(char* hostName, char* IP) {
 	}
 }
 
-//CLIENTE TCP
 int main(int argc, char const *argv[]){    
-
-    if(argc != 3){
-        printf("\nERR: nº de argumentos no válido\n");
-        exit(-1);
-    }
 
     //Variables sockets
     int cliSock;
@@ -58,7 +51,8 @@ int main(int argc, char const *argv[]){
     char *host = argv[1];
     char servIP[50];
 
-    hostNameToIP(host, servIP);
+    hostNameToIP(host, servIP);       //Obtenemos la dcc IP del host       
+       
 
     char dataRecv[1024];
 
@@ -67,7 +61,7 @@ int main(int argc, char const *argv[]){
 
     struct sockaddr_in server;
 
-    //Variables time
+    //Variables de tiempo
     struct timeval ini;
     struct timeval fin;
     float time;
@@ -81,14 +75,19 @@ int main(int argc, char const *argv[]){
     signCTRL.sa_handler = intHandler;
     sigaction(SIGINT, &signCTRL, NULL);
 
-    if(servPort < 1023){
+    if(argc != 3){                                      //Comprobamos el nº de argumentos
+        printf("\nERR: nº de argumentos no válido\n");
+        exit(-1);
+    }
+
+    if(servPort < 1023){                                //Comprobamos el nº de puerto
         printf("\nERR: El nº de puerto debe ser mayor que 1023\n");
         exit(-1);
     }
 
 
     while (keepRunning) {
-        cliSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        cliSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);    //Inicializamos el socket TCP
         if(cliSock < 0) {
             printf("\nERR: No se pudo crear el socket\n");
             exit(-1);
@@ -97,6 +96,7 @@ int main(int argc, char const *argv[]){
         memset(&server, 0, sizeof(server));
         server.sin_family = AF_INET;
 
+        //Análisis de la dirección del cliente
         int ctrlVal = inet_pton(AF_INET, servIP, &server.sin_addr.s_addr);
         if(ctrlVal == 0) {
             printf("\nERR: Direccion no válida\n");
@@ -107,14 +107,14 @@ int main(int argc, char const *argv[]){
         }
         server.sin_port = htons(servPort);
 
-        if(connect(cliSock, (struct sockaddr * ) & server, sizeof(server)) < 0) {
+        if(connect(cliSock, (struct sockaddr * ) & server, sizeof(server)) < 0) {   //Conexión con serv
             printf("\nERR: No se pudo conectar\n");
             exit(-1);
         }
 
-        gettimeofday(&ini, 0);   //Iniciamos el "cronómetro"
+        gettimeofday(&ini, 0);                  //Iniciamos el "cronómetro"
 
-        ssize_t bytesSent = send(cliSock, echo, echoLen, 0);
+        ssize_t bytesSent = send(cliSock, echo, echoLen, 0);    //Enviamos echo= “abcd”
         if(bytesSent < 0) {
             printf("\nERR: No se pudo enviar\n");
             exit(-1);
@@ -125,8 +125,8 @@ int main(int argc, char const *argv[]){
 
         unsigned int totalBytesRecv = 0;
         while (totalBytesRecv < echoLen) {
-            ssize_t bytesRecv = recv(cliSock, dataRecv, 1023, 0);
-            gettimeofday(&fin, 0); //Apagamos el "cronómetro"
+            ssize_t bytesRecv = recv(cliSock, dataRecv, 1023, 0);   	//Recibimos datos del servidor
+            gettimeofday(&fin, 0);                                      //Apagamos el "cronómetro"
 
             if (bytesRecv < 0) {
                 printf("\nERR: No se pudo recibir datos del servidor\n");
@@ -134,8 +134,10 @@ int main(int argc, char const *argv[]){
             }
 
             totalBytesRecv += bytesRecv;
+
+            //Calculamos el tiempo en realizar las conexiones
             time = (fin.tv_sec - ini.tv_sec) * 1000.0f + (fin.tv_usec - ini.tv_usec) / 1000.0f;
-            timeEstad(&time, &tmin, &tmax);
+            timeEstad(&time, &tmin, &tmax); //Obtenemos los tiempos tmax y tmin
 
             printf("-Servidor: %s/%d   bytes= %d   time= %.3f\n", servIP, servPort, bytesRecv, time);
             numEnv++;
@@ -144,6 +146,7 @@ int main(int argc, char const *argv[]){
         sleep(1);
     }
 
+    //Al terminar el bucle (CTRL-C) mostramos las estadísticas del ping
     printf("\n------Estadísticas------\n %i paquetes transmitidos\n tmax= %.3f tmin= %.3f tmed= %.3f\n", numEnv, tmax, tmin, ((tmax+tmin)/2));
 
     return 0;
